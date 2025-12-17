@@ -1,5 +1,5 @@
 # Base image Python
-FROM python:3.11-slim-bookwor
+FROM python:3.11-slim-bookworm
 
 RUN apt-get update && \
     apt-get install -y openjdk-17-jre-headless procps build-essential && \
@@ -14,5 +14,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 RUN chmod +x run_all.sh
+
 
 CMD ["./run_all.sh"]
