@@ -1,4 +1,3 @@
-# collect_stream.py
 import os
 from pyspark.sql import SparkSession
 from pyspark.sql.types import *
@@ -12,7 +11,6 @@ spark = SparkSession.builder \
     .appName("StreamCollector") \
     .getOrCreate()
 
-# ===== schema sama persis =====
 weather_schema = StructType([
     StructField("dt", LongType()),
     StructField("main", StructType([
@@ -79,7 +77,6 @@ df = df_json.select(
     col("air.components.o3").alias("o3")
 ).na.drop()
 
-# APPEND parquet
 df.write.mode("append").parquet(OUTPUT_PATH)
 
 print("✅ Data appended to parquet")

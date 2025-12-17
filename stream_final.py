@@ -9,26 +9,22 @@ from pyspark.sql.types import *
 from pyspark.sql.functions import col, explode
 from pyspark.ml import PipelineModel
 
-# ================= CONFIG =================
 STREAM_DIR = "stream_coba"
 MODEL_PATH = "models/aqi_rf_model"
 REFRESH_SEC = 10
 FORECAST_MINUTES = 10
 
-# ================= UI =================
 st.set_page_config(page_title="Live Weather & AQI Jakarta", layout="wide")
 st.title("🌤 Live Weather & AQI Jakarta")
 st.caption("Spark Streaming Consumer + Offline Trained ML Model")
 st_autorefresh(interval=REFRESH_SEC * 1000, key="refresh")
 
-# ================= SESSION =================
 if "trend_history" not in st.session_state:
     st.session_state.trend_history = []
 
 if "last_file" not in st.session_state:
     st.session_state.last_file = None
 
-# ================= SPARK =================
 @st.cache_resource
 def get_spark():
     return SparkSession.builder \
@@ -43,7 +39,6 @@ def load_model():
 spark = get_spark()
 model = load_model()
 
-# ================= SCHEMA =================
 weather_schema = StructType([
     StructField("dt", LongType()),
     StructField("main", StructType([
@@ -75,7 +70,6 @@ schema = StructType([
     StructField("air", air_schema)
 ])
 
-# ================= HELPERS =================
 def aqi_label(v):
     try:
         v = int(round(v))
@@ -83,7 +77,6 @@ def aqi_label(v):
         return "Unknown"
     return {1:"Good",2:"Fair",3:"Moderate",4:"Poor",5:"Very Poor"}.get(v,"Unknown")
 
-# ================= LOAD STREAM =================
 files = [os.path.join(STREAM_DIR,f) for f in os.listdir(STREAM_DIR) if f.endswith(".json")]
 if not files:
     st.warning("⏳ Menunggu data stream...")
@@ -96,7 +89,6 @@ if latest_file == st.session_state.last_file:
 st.session_state.last_file = latest_file
 st.caption(f"📄 File: `{os.path.basename(latest_file)}`")
 
-# ================= READ DATA =================
 df = spark.read.schema(schema).json(latest_file) \
     .select(
         col("timestamp").alias("time_epoch"),
@@ -118,7 +110,6 @@ df = spark.read.schema(schema).json(latest_file) \
 
 pdf = df.toPandas().iloc[0]
 
-# ================= PREDICT FIRST =================
 FEATURE_COLS = [
     "time_epoch","temp","humidity","pressure",
     "wind_speed","cloudiness",
@@ -137,7 +128,6 @@ if model:
     spark_future = spark.createDataFrame([future_row])
     forecast_aqi = model.transform(spark_future).select("prediction").toPandas().iloc[0,0]
 
-# ================= SAVE HISTORY =================
 history = base_row.copy()
 history.update({
     "aqi": int(pdf["aqi"]),
@@ -151,7 +141,6 @@ trend_df["time"] = pd.to_datetime(trend_df["time_epoch"], unit="s")
 
 latest = trend_df.iloc[-1]
 
-# ================= METRICS =================
 st.subheader("📌 Air Quality Overview")
 
 c1,c2,c3 = st.columns(3)
@@ -174,11 +163,9 @@ p3.metric("CO", f"{latest.co:.2f}")
 p4.metric("NO₂", f"{latest.no2:.2f}")
 p5.metric("O₃", f"{latest.o3:.2f}")
 
-# ================= TABLE =================
 st.subheader("📊 Recent Data")
 st.dataframe(trend_df.tail(10), use_container_width=True)
 
-# ================= PLOT =================
 fig, ax = plt.subplots(2,1, figsize=(12,7))
 
 ax[0].plot(trend_df["time"], trend_df["temp"], label="Temp")
