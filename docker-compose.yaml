@@ -1,52 +1,10 @@
 version: '3.8'
 
 services:
-  # 1. Producer: Penghasil Data
-  producer:
+  aqi_app:
     build: .
-    container_name: aqi_producer
-    command: python producer.py
-    volumes:
-      - .:/app  # Sinkronisasi folder host ke container
-    networks:
-      - aqi_net
-
-  # 2. Collector: PySpark Streaming
-  collector:
-    build: .
-    container_name: aqi_collector
-    command: python collect_stream.py
-    volumes:
-      - .:/app
-    depends_on:
-      - producer
-    environment:
-      - SPARK_LOCAL_IP=0.0.0.0
-    networks:
-      - aqi_net
-
-  # 3. Trainer: Model Training (Jalan sekali atau loop)
-  trainer:
-    build: .
-    container_name: aqi_trainer
-    command: python train_model.py
-    volumes:
-      - .:/app
-    networks:
-      - aqi_net
-
-  # 4. Streamlit: Dashboard Visualisasi
-  dashboard:
-    build: .
-    container_name: aqi_dashboard
-    command: streamlit run stream_final.py --server.address=localhost
+    container_name: aqi_all_in_one
     volumes:
       - .:/app
     ports:
-      - "8501:8501" 
-    networks:
-      - aqi_net
-
-networks:
-  aqi_net:
-    driver: bridge
+      - "8501:8501"
